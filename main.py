@@ -249,7 +249,7 @@ def get_payment_column(df):
     # Check for exact column matches
     payment_columns = [
         'Payments_Applied_Against_Invoice_in_USD', 
-        ' Payments_Applied_Against_Invoice_in_USD ',  # Note the spaces
+        'Payments_Applied_Against_Invoice_in_USD',  # Note no spaces
         'Payments Received',
         'Payment Amount',
         'Payments Applied'
@@ -657,164 +657,164 @@ def main():
             """)
     
     # Invoice Analysis Tab
-with tab2:
-    st.markdown("<h2 class='section-header'>Invoice-Based Personnel Analysis</h2>", unsafe_allow_html=True)
-    
-    if not df_filtered.empty and 'Originator' in df_filtered.columns and 'Invoice_Date' in df_filtered.columns:
-        # Calculate invoice-based joiners/leavers
-        monthly_attorneys = invoice_based_joiners_leavers(df_filtered)
+    with tab2:
+        st.markdown("<h2 class='section-header'>Invoice-Based Personnel Analysis</h2>", unsafe_allow_html=True)
         
-        if not monthly_attorneys.empty and len(monthly_attorneys) > 1:
-            st.info("This analysis shows personnel changes based on invoice activity patterns, which may differ from official personnel records.")
+        if not df_filtered.empty and 'Originator' in df_filtered.columns and 'Invoice_Date' in df_filtered.columns:
+            # Calculate invoice-based joiners/leavers
+            monthly_attorneys = invoice_based_joiners_leavers(df_filtered)
             
-            # Create visualization
-            fig = go.Figure()
-            
-            fig.add_trace(go.Bar(
-                x=monthly_attorneys['YearMonth'],
-                y=monthly_attorneys['Joiners'],
-                name='Joiners (Invoice Activity)',
-                marker_color='#10B981'
-            ))
-            
-            fig.add_trace(go.Bar(
-                x=monthly_attorneys['YearMonth'],
-                y=monthly_attorneys['Leavers'],
-                name='Leavers (Invoice Activity)',
-                marker_color='#EF4444'
-            ))
-            
-            fig.add_trace(go.Scatter(
-                x=monthly_attorneys['YearMonth'],
-                y=monthly_attorneys['Net_Change'],
-                name='Net Change',
-                mode='lines+markers',
-                line=dict(color='#3B82F6', width=3),
-                marker=dict(size=8)
-            ))
-            
-            fig.update_layout(
-                title='Monthly Joiners vs Leavers (Based on Invoice Activity)',
-                xaxis=dict(title='Month', tickangle=45),
-                yaxis=dict(title='Number of Attorneys'),
-                barmode='group',
-                legend=dict(orientation='h', yanchor='bottom', y=1.02),
-                height=500
-            )
-            
-            st.plotly_chart(fig, use_container_width=True)
-            
-            # Calculate yearly summary if possible
-            df_filtered['Year'] = df_filtered['Invoice_Date'].dt.year
-            yearly_attorneys = df_filtered.groupby('Year')['Originator'].nunique().reset_index()
-            yearly_attorneys.columns = ['Year', 'Attorney_Count']
-            yearly_attorneys = yearly_attorneys.sort_values('Year')
-            
-            if len(yearly_attorneys) > 1:
-                yearly_attorneys['Previous_Count'] = yearly_attorneys['Attorney_Count'].shift(1)
-                yearly_attorneys['Net_Change'] = yearly_attorneys['Attorney_Count'] - yearly_attorneys['Previous_Count']
-                yearly_attorneys['Joiners'] = yearly_attorneys['Net_Change'].apply(lambda x: max(0, x))
-                yearly_attorneys['Leavers'] = yearly_attorneys['Net_Change'].apply(lambda x: abs(min(0, x)))
+            if not monthly_attorneys.empty and len(monthly_attorneys) > 1:
+                st.info("This analysis shows personnel changes based on invoice activity patterns, which may differ from official personnel records.")
                 
-                # Drop NaN rows
-                yearly_attorneys = yearly_attorneys.dropna()
+                # Create visualization
+                fig = go.Figure()
                 
-                if not yearly_attorneys.empty:
-                    st.subheader("Year-wise Trend (Invoice Activity)")
-                    st.dataframe(yearly_attorneys[['Year', 'Attorney_Count', 'Joiners', 'Leavers', 'Net_Change']], use_container_width=True)
-                    
-                    # Compare with official data
-                    st.markdown("""
-                    <div style="background-color: #fef3c7; padding: 1rem; border-radius: 0.5rem; margin: 1rem 0;">
-                        <p><strong>Note:</strong> This analysis is based on invoice patterns and may differ from official personnel records.</p>
-                    </div>
-                    """, unsafe_allow_html=True)
-            
-            # Top attorneys by billing
-            if 'Invoice_Total_in_USD' in df_filtered.columns:
-                st.subheader("Top Attorneys by Billing")
+                fig.add_trace(go.Bar(
+                    x=monthly_attorneys['YearMonth'],
+                    y=monthly_attorneys['Joiners'],
+                    name='Joiners (Invoice Activity)',
+                    marker_color='#10B981'
+                ))
                 
-                attorney_billing = df_filtered.groupby('Originator')['Invoice_Total_in_USD'].sum().reset_index()
-                attorney_billing = attorney_billing.sort_values('Invoice_Total_in_USD', ascending=False)
+                fig.add_trace(go.Bar(
+                    x=monthly_attorneys['YearMonth'],
+                    y=monthly_attorneys['Leavers'],
+                    name='Leavers (Invoice Activity)',
+                    marker_color='#EF4444'
+                ))
                 
-                # Create bar chart
-                top_n = min(10, len(attorney_billing))
-                top_attorneys = attorney_billing.head(top_n)
-                
-                fig = px.bar(
-                    top_attorneys,
-                    x='Originator',
-                    y='Invoice_Total_in_USD',
-                    title=f'Top {top_n} Attorneys by Billing',
-                    labels={'Invoice_Total_in_USD': 'Total Billed (USD)', 'Originator': 'Attorney'},
-                    color='Invoice_Total_in_USD',
-                    color_continuous_scale='Blues'
-                )
+                fig.add_trace(go.Scatter(
+                    x=monthly_attorneys['YearMonth'],
+                    y=monthly_attorneys['Net_Change'],
+                    name='Net Change',
+                    mode='lines+markers',
+                    line=dict(color='#3B82F6', width=3),
+                    marker=dict(size=8)
+                ))
                 
                 fig.update_layout(
-                    xaxis_tickangle=45,
-                    height=400
+                    title='Monthly Joiners vs Leavers (Based on Invoice Activity)',
+                    xaxis=dict(title='Month', tickangle=45),
+                    yaxis=dict(title='Number of Attorneys'),
+                    barmode='group',
+                    legend=dict(orientation='h', yanchor='bottom', y=1.02),
+                    height=500
                 )
                 
                 st.plotly_chart(fig, use_container_width=True)
                 
-                # Show which top attorneys are among joiners/leavers
-                if not personnel_changes.empty:
-                    joiners = personnel_changes[personnel_changes['type'] == 'Joiner']['name'].tolist()
-                    leavers = personnel_changes[personnel_changes['type'] == 'Leaver']['name'].tolist()
+                # Calculate yearly summary if possible
+                df_filtered['Year'] = df_filtered['Invoice_Date'].dt.year
+                yearly_attorneys = df_filtered.groupby('Year')['Originator'].nunique().reset_index()
+                yearly_attorneys.columns = ['Year', 'Attorney_Count']
+                yearly_attorneys = yearly_attorneys.sort_values('Year')
+                
+                if len(yearly_attorneys) > 1:
+                    yearly_attorneys['Previous_Count'] = yearly_attorneys['Attorney_Count'].shift(1)
+                    yearly_attorneys['Net_Change'] = yearly_attorneys['Attorney_Count'] - yearly_attorneys['Previous_Count']
+                    yearly_attorneys['Joiners'] = yearly_attorneys['Net_Change'].apply(lambda x: max(0, x))
+                    yearly_attorneys['Leavers'] = yearly_attorneys['Net_Change'].apply(lambda x: abs(min(0, x)))
                     
-                    top_joiners = [atty for atty in top_attorneys['Originator'] if atty in joiners]
-                    top_leavers = [atty for atty in top_attorneys['Originator'] if atty in leavers]
+                    # Drop NaN rows
+                    yearly_attorneys = yearly_attorneys.dropna()
                     
-                    if top_leavers:
-                        st.warning(f"⚠️ {len(top_leavers)} of the top {top_n} billing attorneys are among recent leavers: {', '.join(top_leavers)}")
+                    if not yearly_attorneys.empty:
+                        st.subheader("Year-wise Trend (Invoice Activity)")
+                        st.dataframe(yearly_attorneys[['Year', 'Attorney_Count', 'Joiners', 'Leavers', 'Net_Change']], use_container_width=True)
+                        
+                        # Compare with official data
+                        st.markdown("""
+                        <div style="background-color: #fef3c7; padding: 1rem; border-radius: 0.5rem; margin: 1rem 0;">
+                            <p><strong>Note:</strong> This analysis is based on invoice patterns and may differ from official personnel records.</p>
+                        </div>
+                        """, unsafe_allow_html=True)
+                
+                # Top attorneys by billing
+                if 'Invoice_Total_in_USD' in df_filtered.columns:
+                    st.subheader("Top Attorneys by Billing")
                     
-                    if top_joiners:
-                        st.success(f"✅ {len(top_joiners)} of the top {top_n} billing attorneys are recent joiners: {', '.join(top_joiners)}")
+                    attorney_billing = df_filtered.groupby('Originator')['Invoice_Total_in_USD'].sum().reset_index()
+                    attorney_billing = attorney_billing.sort_values('Invoice_Total_in_USD', ascending=False)
+                    
+                    # Create bar chart
+                    top_n = min(10, len(attorney_billing))
+                    top_attorneys = attorney_billing.head(top_n)
+                    
+                    fig = px.bar(
+                        top_attorneys,
+                        x='Originator',
+                        y='Invoice_Total_in_USD',
+                        title=f'Top {top_n} Attorneys by Billing',
+                        labels={'Invoice_Total_in_USD': 'Total Billed (USD)', 'Originator': 'Attorney'},
+                        color='Invoice_Total_in_USD',
+                        color_continuous_scale='Blues'
+                    )
+                    
+                    fig.update_layout(
+                        xaxis_tickangle=45,
+                        height=400
+                    )
+                    
+                    st.plotly_chart(fig, use_container_width=True)
+                    
+                    # Show which top attorneys are among joiners/leavers
+                    if not personnel_changes.empty:
+                        joiners = personnel_changes[personnel_changes['type'] == 'Joiner']['name'].tolist()
+                        leavers = personnel_changes[personnel_changes['type'] == 'Leaver']['name'].tolist()
+                        
+                        top_joiners = [atty for atty in top_attorneys['Originator'] if atty in joiners]
+                        top_leavers = [atty for atty in top_attorneys['Originator'] if atty in leavers]
+                        
+                        if top_leavers:
+                            st.warning(f"⚠️ {len(top_leavers)} of the top {top_n} billing attorneys are among recent leavers: {', '.join(top_leavers)}")
+                        
+                        if top_joiners:
+                            st.success(f"✅ {len(top_joiners)} of the top {top_n} billing attorneys are recent joiners: {', '.join(top_joiners)}")
+            else:
+                st.warning("Not enough invoice data to analyze personnel changes by invoice activity.")
         else:
-            st.warning("Not enough invoice data to analyze personnel changes by invoice activity.")
-    else:
-        st.warning("Missing invoice data required for this analysis. Please check if invoice data is loaded correctly.")
+            st.warning("Missing invoice data required for this analysis. Please check if invoice data is loaded correctly.")
 
-# Detailed Log Tab
-with tab3:
-    st.markdown("<h2 class='section-header'>Personnel Changes Log</h2>", unsafe_allow_html=True)
-    
-    # Filter controls
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        # Quarter filter
-        quarters = ['All'] + list(personnel_changes['quarter'].unique())
-        selected_quarter = st.selectbox("Select Quarter", options=quarters)
-    
-    with col2:
-        # Change type filter
-        change_types = ['All', 'Joiner', 'Leaver']
-        selected_type = st.selectbox("Select Change Type", options=change_types)
-    
-    # Apply filters
-    filtered_quarter = None if selected_quarter == 'All' else selected_quarter
-    filtered_type = None if selected_type == 'All' else selected_type
-    
-    # Display personnel table
-    display_personnel_table(personnel_changes, quarter=filtered_quarter, change_type=filtered_type)
-    
-    # Download data section
-    st.subheader("Download Data")
-    
-    # Prepare download data
-    personnel_download = personnel_changes.copy()
-    personnel_download['date'] = personnel_download['date'].dt.strftime('%m/%d/%Y')
-    
-    # Download buttons
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.markdown(download_csv(personnel_download), unsafe_allow_html=True)
-    
-    with col2:
-        st.markdown(download_excel(personnel_download), unsafe_allow_html=True)
+    # Detailed Log Tab
+    with tab3:
+        st.markdown("<h2 class='section-header'>Personnel Changes Log</h2>", unsafe_allow_html=True)
+        
+        # Filter controls
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            # Quarter filter
+            quarters = ['All'] + list(personnel_changes['quarter'].unique())
+            selected_quarter = st.selectbox("Select Quarter", options=quarters)
+        
+        with col2:
+            # Change type filter
+            change_types = ['All', 'Joiner', 'Leaver']
+            selected_type = st.selectbox("Select Change Type", options=change_types)
+        
+        # Apply filters
+        filtered_quarter = None if selected_quarter == 'All' else selected_quarter
+        filtered_type = None if selected_type == 'All' else selected_type
+        
+        # Display personnel table
+        display_personnel_table(personnel_changes, quarter=filtered_quarter, change_type=filtered_type)
+        
+        # Download data section
+        st.subheader("Download Data")
+        
+        # Prepare download data
+        personnel_download = personnel_changes.copy()
+        personnel_download['date'] = personnel_download['date'].dt.strftime('%m/%d/%Y')
+        
+        # Download buttons
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown(download_csv(personnel_download), unsafe_allow_html=True)
+        
+        with col2:
+            st.markdown(download_excel(personnel_download), unsafe_allow_html=True)
 
 # Run the main application
 if __name__ == "__main__":
