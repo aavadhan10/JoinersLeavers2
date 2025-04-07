@@ -249,7 +249,7 @@ def get_payment_column(df):
     # Check for exact column matches
     payment_columns = [
         'Payments_Applied_Against_Invoice_in_USD', 
-        'Payments_Applied_Against_Invoice_in_USD',  # Note no spaces
+        ' Payments_Applied_Against_Invoice_in_USD ',  # Note the spaces
         'Payments Received',
         'Payment Amount',
         'Payments Applied'
@@ -415,7 +415,7 @@ def main():
                 if len(date_range) == 2:
                     start_date, end_date = date_range
                     df_filtered = df[(df['Invoice_Date'].dt.date >= start_date) & 
-                                    (df['Invoice_Date'].dt.date <= end_date)]
+                                     (df['Invoice_Date'].dt.date <= end_date)]
         except Exception as e:
             st.sidebar.warning(f"Could not apply date filter: {str(e)}")
     
@@ -468,7 +468,7 @@ def main():
     # Calculate summary statistics
     personnel_summary = create_personnel_summary(personnel_changes)
     
-    # Main sections
+    # Main sections with tabs
     tab1, tab2, tab3 = st.tabs(["📊 Summary", "📈 Invoice Analysis", "📋 Detailed Log"])
     
     # Summary Tab
@@ -775,7 +775,7 @@ def main():
                 st.warning("Not enough invoice data to analyze personnel changes by invoice activity.")
         else:
             st.warning("Missing invoice data required for this analysis. Please check if invoice data is loaded correctly.")
-
+    
     # Detailed Log Tab
     with tab3:
         st.markdown("<h2 class='section-header'>Personnel Changes Log</h2>", unsafe_allow_html=True)
