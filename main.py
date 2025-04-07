@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -379,8 +380,11 @@ def main():
     
     personnel_summary = create_personnel_summary(personnel_changes)
     
-    # Create tabs (ensure this line is executed before referencing tab2)
-    tab1, tab2, tab3 = st.tabs(["📊 Summary", "📈 Invoice Analysis", "📋 Detailed Log"])
+    # Create tabs (using the alternative method to avoid NameError issues)
+    tabs = st.tabs(["📊 Summary", "📈 Invoice Analysis", "📋 Detailed Log"])
+    tab1 = tabs[0]
+    tab2 = tabs[1]
+    tab3 = tabs[2]
     
     # Summary Tab
     with tab1:
